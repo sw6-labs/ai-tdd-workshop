@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Slack Thread Merger</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<header>
+  <h1>Slack Thread Merger</h1>
+  <p class="sub">
+    Insert Slack reply threads back into a channel export at the right
+    points, and get one tidy markdown file out.
+  </p>
+</header>
+
+<main>
+  <section class="card">
+    <h2>1. Channel export</h2>
+    <p class="hint">
+      The main Slack channel markdown (e.g. <code>sample-input.md</code>).
+      Upload a file <em>or</em> paste the text.
+    </p>
+    <label class="file-btn">
+      <input type="file" id="channelFile" accept=".md,.txt,text/markdown,text/plain" />
+      <span>Choose channel file…</span>
+    </label>
+    <span id="channelFileName" class="filename"></span>
+    <details>
+      <summary>…or paste channel text</summary>
+      <textarea id="channelPaste" rows="8"
+        placeholder="Paste the Slack channel markdown here. A pasted file above takes priority over this box."></textarea>
+      <p class="warn">
+        ⚠ Pasting raw text straight from Slack will not format nicely —
+        the sample files have already been processed.
+      </p>
+    </details>
+  </section>
+
+  <section class="card">
+    <h2>2. Reply thread files</h2>
+    <p class="hint">
+      Select all the reply-thread markdown files (e.g. the 28
+      <code>ReplyThreadNN.md</code> files). Each is matched to its
+      insertion point by the number in its filename, falling back to
+      order if a number is missing.
+    </p>
+    <label class="file-btn">
+      <input type="file" id="replyFiles" accept=".md,.txt,text/markdown,text/plain" multiple />
+      <span>Choose reply-thread files…</span>
+    </label>
+    <span id="replyFilesCount" class="filename"></span>
+  </section>
+
+  <section class="card">
+    <button id="runBtn" class="primary" disabled>Merge threads</button>
+    <button id="downloadBtn" class="ghost" disabled>Download .md</button>
+  </section>
+
+  <section id="reportCard" class="card report hidden">
+    <h2>Result</h2>
+    <div id="report"></div>
+  </section>
+
+  <section id="outputCard" class="card hidden">
+    <div class="tabs">
+      <button class="tab active" data-tab="preview">Preview</button>
+      <button class="tab" data-tab="raw">Raw markdown</button>
+    </div>
+    <div id="tab-preview" class="tab-panel"><article id="preview" class="markdown"></article></div>
+    <div id="tab-raw" class="tab-panel hidden">
+      <textarea id="raw" rows="24" spellcheck="false" readonly></textarea>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p>Runs entirely in your browser. Nothing is uploaded anywhere.</p>
+</footer>
+
+<script src="parser.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
