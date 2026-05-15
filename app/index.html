@@ -16,8 +16,8 @@
 </header>
 
 <main>
-  <section class="card">
-    <h2>1. Channel export</h2>
+  <section class="card" id="card-channel">
+    <h2>1. Channel export <span class="status" id="status-channel"></span></h2>
     <p class="hint">
       The main Slack channel markdown (e.g. <code>sample-input.md</code>).
       Upload a file <em>or</em> paste the text.
@@ -38,8 +38,8 @@
     </details>
   </section>
 
-  <section class="card">
-    <h2>2. Reply thread files</h2>
+  <section class="card" id="card-replies">
+    <h2>2. Reply thread files <span class="status" id="status-replies"></span></h2>
     <p class="hint">
       Select all the reply-thread markdown files (e.g. the 28
       <code>ReplyThreadNN.md</code> files). Each is matched to its
@@ -53,8 +53,8 @@
     <span id="replyFilesCount" class="filename"></span>
   </section>
 
-  <section class="card">
-    <h2>3. What to do</h2>
+  <section class="card" id="card-mode">
+    <h2>3. What to do <span class="status" id="status-mode"></span></h2>
     <p class="hint">
       Choose which steps to run, and in what order. Reply-thread files
       aren't needed for “only insert dates”.

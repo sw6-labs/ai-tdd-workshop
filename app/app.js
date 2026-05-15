@@ -18,6 +18,10 @@
   var dateError = document.getElementById('dateError');
   var applyDatesBtn = document.getElementById('applyDatesBtn');
   var cancelDatesBtn = document.getElementById('cancelDatesBtn');
+  var cardReplies = document.getElementById('card-replies');
+  var statusChannel = document.getElementById('status-channel');
+  var statusReplies = document.getElementById('status-replies');
+  var statusMode = document.getElementById('status-mode');
 
   var state = {
     channelText: '',
@@ -55,14 +59,47 @@
     });
   }
 
+  function setStatus(el, kind, text) {
+    el.className = 'status ' + kind;
+    el.textContent = text;
+  }
+
+  function refreshStepStates(hasChannel, repliesNeeded) {
+    setStatus(
+      statusChannel,
+      hasChannel ? 'ready' : 'todo',
+      hasChannel ? '✓ ready' : 'needs input'
+    );
+
+    if (!repliesNeeded) {
+      cardReplies.classList.add('dim');
+      setStatus(statusReplies, 'skip', 'not needed for this mode');
+    } else {
+      cardReplies.classList.remove('dim');
+      var n = state.replies.length;
+      setStatus(
+        statusReplies,
+        n ? 'ready' : 'todo',
+        n ? '✓ ' + n + ' file' + (n === 1 ? '' : 's') : 'needs input'
+      );
+    }
+
+    // A mode is always selected (one radio is checked by default).
+    setStatus(statusMode, 'ready', '✓ ready');
+  }
+
   function refreshRunState() {
     var hasChannel =
       (state.channelFromFile && state.channelText) ||
       channelPaste.value.trim().length > 0;
     var m = currentMode();
-    var hasReplies = !modeNeedsReplies(m) || state.replies.length > 0;
+    var repliesNeeded = modeNeedsReplies(m);
+    var hasReplies = !repliesNeeded || state.replies.length > 0;
     runBtn.disabled = !(hasChannel && hasReplies);
+    refreshStepStates(!!hasChannel, repliesNeeded);
   }
+
+  refreshRunState();
 
   Array.prototype.forEach.call(
     document.querySelectorAll('input[name="mode"]'),
