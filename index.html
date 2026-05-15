@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Slack Thread Merger</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Slack Thread Merger</h1>
+      <p class="muted">
+        Insert reply threads and date headers back into a Slack channel
+        export. Everything runs in your browser &mdash; nothing is uploaded.
+      </p>
+
+      <section>
+        <h2>1. Mode</h2>
+        <fieldset id="mode-fieldset">
+          <label
+            ><input type="radio" name="mode" value="1" checked /> Insert reply
+            threads, then insert dates</label
+          >
+          <label
+            ><input type="radio" name="mode" value="2" /> Insert dates, then
+            insert reply threads</label
+          >
+          <label
+            ><input type="radio" name="mode" value="3" /> Only insert reply
+            threads</label
+          >
+          <label
+            ><input type="radio" name="mode" value="4" /> Only insert
+            dates</label
+          >
+        </fieldset>
+      </section>
+
+      <section>
+        <h2>2. Channel export</h2>
+        <p class="warn" id="paste-warning">
+          ⚠ Raw Slack paste will not format nicely &mdash; the sample files
+          are pre-processed. Prefer uploading a prepared <code>.md</code>/<code
+            >.txt</code
+          >
+          file.
+        </p>
+        <label
+          >Upload channel file (.md/.txt):
+          <input id="channel-file" type="file" accept=".md,.txt,text/plain"
+        /></label>
+        <p class="muted">An uploaded file takes priority over the paste box.</p>
+        <label
+          >…or paste the channel export:
+          <textarea
+            id="channel-paste"
+            rows="6"
+            placeholder="Paste channel markdown here"
+          ></textarea>
+        </label>
+        <p id="channel-status" class="status">Channel: not provided</p>
+      </section>
+
+      <section id="reply-section">
+        <h2>3. Reply-thread files</h2>
+        <label
+          >Select all reply-thread files (e.g. the 28 ReplyThreadNN.md):
+          <input id="reply-files" type="file" accept=".md,.txt" multiple
+        /></label>
+        <p id="reply-status" class="status">Reply files: none</p>
+      </section>
+
+      <section>
+        <button id="run" type="button" disabled>Run</button>
+        <span id="run-hint" class="muted"></span>
+      </section>
+
+      <section id="date-review" hidden>
+        <h2>Date review</h2>
+        <p class="muted">
+          Tick each timestamp that begins a new date and choose its date.
+        </p>
+        <table id="date-table">
+          <thead>
+            <tr>
+              <th>New date?</th>
+              <th>Context</th>
+              <th>Time</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="date-tbody"></tbody>
+        </table>
+        <p id="date-error" class="warn" hidden></p>
+        <button id="apply-dates" type="button">Apply dates</button>
+        <button id="cancel-dates" type="button" class="secondary">
+          Cancel
+        </button>
+      </section>
+
+      <section id="report-section" hidden>
+        <h2>Report</h2>
+        <div id="report"></div>
+      </section>
+
+      <section id="output-section" hidden>
+        <h2>Output</h2>
+        <div class="tabs">
+          <button id="tab-raw" type="button" class="tab active">Raw</button>
+          <button id="tab-preview" type="button" class="tab">Preview</button>
+          <button id="download" type="button" class="secondary">
+            Download .md
+          </button>
+        </div>
+        <textarea id="raw-output" readonly rows="20"></textarea>
+        <div id="preview-output" class="preview" hidden></div>
+      </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

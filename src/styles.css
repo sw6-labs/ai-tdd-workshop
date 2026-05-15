@@ -1,0 +1,174 @@
+:root {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.5;
+  color: #1d1f23;
+}
+
+body {
+  margin: 0;
+  background: #f5f6f8;
+}
+
+main {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 4rem;
+}
+
+h1 {
+  margin-bottom: 0.25rem;
+}
+
+section {
+  background: #fff;
+  border: 1px solid #e1e4e8;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin: 1rem 0;
+}
+
+h2 {
+  font-size: 1.05rem;
+  margin: 0 0 0.75rem;
+}
+
+label {
+  display: block;
+  margin: 0.5rem 0;
+  font-weight: 500;
+}
+
+input[type="file"],
+textarea {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  font-weight: 400;
+  box-sizing: border-box;
+}
+
+textarea {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.85rem;
+  padding: 0.5rem;
+}
+
+fieldset {
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+}
+
+fieldset label {
+  font-weight: 400;
+}
+
+.muted {
+  color: #6a737d;
+  font-size: 0.9rem;
+}
+
+.status {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.status.ready {
+  color: #1a7f37;
+}
+
+.status.not-needed {
+  color: #6a737d;
+  font-style: italic;
+}
+
+.warn {
+  color: #9a3412;
+  background: #fff4e5;
+  border: 1px solid #f3c98b;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+button {
+  font: inherit;
+  padding: 0.5rem 1rem;
+  border: 0;
+  border-radius: 6px;
+  background: #1f6feb;
+  color: #fff;
+  cursor: pointer;
+}
+
+button:disabled {
+  background: #9aa7b3;
+  cursor: not-allowed;
+}
+
+button.secondary {
+  background: #eaeef2;
+  color: #1d1f23;
+}
+
+#reply-section.not-needed {
+  opacity: 0.55;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.9rem;
+}
+
+th,
+td {
+  border: 1px solid #e1e4e8;
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.tab {
+  background: #eaeef2;
+  color: #1d1f23;
+}
+
+.tab.active {
+  background: #1f6feb;
+  color: #fff;
+}
+
+.preview {
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  padding: 1rem;
+  background: #fff;
+  min-height: 12rem;
+  overflow-x: auto;
+}
+
+.preview blockquote {
+  border-left: 3px solid #d0d7de;
+  margin: 0.5rem 0;
+  padding-left: 0.75rem;
+  color: #444;
+}
+
+.report-line {
+  margin: 0.2rem 0;
+}
+
+.report-good {
+  color: #1a7f37;
+  font-weight: 600;
+}
+
+.report-flag {
+  color: #9a3412;
+  font-weight: 600;
+}
