@@ -54,8 +54,49 @@
   </section>
 
   <section class="card">
-    <button id="runBtn" class="primary" disabled>Merge threads</button>
+    <h2>3. What to do</h2>
+    <p class="hint">
+      Choose which steps to run, and in what order. Reply-thread files
+      aren't needed for “only insert dates”.
+    </p>
+    <div class="modes">
+      <label>
+        <input type="radio" name="mode" value="replies-then-dates" checked />
+        Insert reply threads, then insert dates
+      </label>
+      <label>
+        <input type="radio" name="mode" value="dates-then-replies" />
+        Insert dates, then insert reply threads
+      </label>
+      <label>
+        <input type="radio" name="mode" value="replies" />
+        Only insert reply threads
+      </label>
+      <label>
+        <input type="radio" name="mode" value="dates" />
+        Only insert dates
+      </label>
+    </div>
+  </section>
+
+  <section class="card">
+    <button id="runBtn" class="primary" disabled>Process</button>
     <button id="downloadBtn" class="ghost" disabled>Download .md</button>
+  </section>
+
+  <section id="dateCard" class="card hidden">
+    <h2>Date review</h2>
+    <p class="hint">
+      Tick every timestamp that begins a <strong>new date</strong> (not just
+      a new time on the same day), then pick the date. The first timestamp is
+      always a new date. Unticked timestamps are left unchanged.
+    </p>
+    <p id="dateError" class="warn hidden"></p>
+    <div id="dateTableWrap"></div>
+    <div class="date-actions">
+      <button id="applyDatesBtn" class="primary">Apply dates</button>
+      <button id="cancelDatesBtn" class="ghost">Cancel</button>
+    </div>
   </section>
 
   <section id="reportCard" class="card report hidden">

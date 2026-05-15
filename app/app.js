@@ -13,13 +13,36 @@
   var outputCard = document.getElementById('outputCard');
   var previewEl = document.getElementById('preview');
   var rawEl = document.getElementById('raw');
+  var dateCard = document.getElementById('dateCard');
+  var dateTableWrap = document.getElementById('dateTableWrap');
+  var dateError = document.getElementById('dateError');
+  var applyDatesBtn = document.getElementById('applyDatesBtn');
+  var cancelDatesBtn = document.getElementById('cancelDatesBtn');
 
   var state = {
     channelText: '',
     channelFromFile: false,
     replies: [], // {name, content}
-    output: ''
+    output: '',
+    review: null // {text, timestamps, onApply, mergeReport}
   };
+
+  function currentMode() {
+    var r = document.querySelector('input[name="mode"]:checked');
+    return r ? r.value : 'replies-then-dates';
+  }
+
+  function modeNeedsReplies(m) {
+    return m === 'replies' ||
+      m === 'replies-then-dates' ||
+      m === 'dates-then-replies';
+  }
+
+  function modeNeedsDates(m) {
+    return m === 'dates' ||
+      m === 'replies-then-dates' ||
+      m === 'dates-then-replies';
+  }
 
   function readFile(file) {
     return new Promise(function (resolve, reject) {
@@ -36,8 +59,15 @@
     var hasChannel =
       (state.channelFromFile && state.channelText) ||
       channelPaste.value.trim().length > 0;
-    runBtn.disabled = !(hasChannel && state.replies.length > 0);
+    var m = currentMode();
+    var hasReplies = !modeNeedsReplies(m) || state.replies.length > 0;
+    runBtn.disabled = !(hasChannel && hasReplies);
   }
+
+  Array.prototype.forEach.call(
+    document.querySelectorAll('input[name="mode"]'),
+    function (r) { r.addEventListener('change', refreshRunState); }
+  );
 
   channelFile.addEventListener('change', function () {
     var f = channelFile.files[0];
@@ -62,21 +92,152 @@
     });
   });
 
-  runBtn.addEventListener('click', function () {
-    var channelText = state.channelFromFile && state.channelText
+  function getChannelText() {
+    return state.channelFromFile && state.channelText
       ? state.channelText
       : channelPaste.value;
+  }
 
-    var result = window.SlackMerger.merge(channelText, state.replies);
-    state.output = result.output;
-
-    renderReport(result.report);
-    rawEl.value = result.output;
-    previewEl.innerHTML = renderMarkdown(result.output);
-
+  function showResult(output, mergeReport, datesNote, filename) {
+    state.output = output;
+    state.downloadName = filename || 'output.md';
+    renderReport(mergeReport, datesNote);
+    rawEl.value = output;
+    previewEl.innerHTML = renderMarkdown(output);
     reportCard.classList.remove('hidden');
     outputCard.classList.remove('hidden');
     downloadBtn.disabled = false;
+  }
+
+  runBtn.addEventListener('click', function () {
+    var mode = currentMode();
+    var channelText = getChannelText();
+
+    // Hide any previous results while we (re)compute.
+    reportCard.classList.add('hidden');
+    outputCard.classList.add('hidden');
+    dateCard.classList.add('hidden');
+
+    if (mode === 'replies') {
+      var r = window.SlackMerger.merge(channelText, state.replies);
+      showResult(r.output, r.report, null, 'merged-channel.md');
+      return;
+    }
+
+    if (mode === 'dates') {
+      startDateReview(channelText, null, function (dated, inserted) {
+        showResult(
+          dated,
+          null,
+          inserted + ' date header' + (inserted === 1 ? '' : 's') +
+            ' inserted.',
+          'channel-with-dates.md'
+        );
+      });
+      return;
+    }
+
+    if (mode === 'replies-then-dates') {
+      var m1 = window.SlackMerger.merge(channelText, state.replies);
+      startDateReview(m1.output, m1.report, function (dated, inserted) {
+        showResult(
+          dated,
+          m1.report,
+          inserted + ' date header' + (inserted === 1 ? '' : 's') +
+            ' inserted after merging.',
+          'merged-channel-with-dates.md'
+        );
+      });
+      return;
+    }
+
+    // dates-then-replies
+    startDateReview(channelText, null, function (dated, inserted) {
+      var m2 = window.SlackMerger.merge(dated, state.replies);
+      showResult(
+        m2.output,
+        m2.report,
+        inserted + ' date header' + (inserted === 1 ? '' : 's') +
+          ' inserted before merging.',
+        'merged-channel-with-dates.md'
+      );
+    });
+  });
+
+  // --- Batch date review ---------------------------------------------------
+
+  function startDateReview(text, mergeReport, onApply) {
+    var timestamps = window.SlackMerger.findTimestamps(text);
+    if (!timestamps.length) {
+      onApply(text, 0);
+      return;
+    }
+    state.review = { text: text, timestamps: timestamps, onApply: onApply };
+    buildDateTable(timestamps);
+    dateError.classList.add('hidden');
+    dateError.textContent = '';
+    dateCard.classList.remove('hidden');
+    dateCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function buildDateTable(timestamps) {
+    var html =
+      '<table class="date-table">' +
+      '<thead><tr>' +
+      '<th>New date?</th><th>Context (prev. line)</th>' +
+      '<th>Time</th><th>Date</th>' +
+      '</tr></thead><tbody>';
+    timestamps.forEach(function (t, idx) {
+      var preview = t.prevPreview
+        ? esc(t.prevPreview)
+        : '<span class="muted">(start of file)</span>';
+      html +=
+        '<tr>' +
+        '<td class="c"><input type="checkbox" data-i="' + idx + '"' +
+          (t.isFirst ? ' checked' : '') + ' /></td>' +
+        '<td class="ctx">' + preview + '</td>' +
+        '<td class="c">' + esc(t.time) + '</td>' +
+        '<td><input type="date" data-d="' + idx + '" /></td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    dateTableWrap.innerHTML = html;
+  }
+
+  applyDatesBtn.addEventListener('click', function () {
+    var review = state.review;
+    if (!review) return;
+
+    var decisions = [];
+    var missing = 0;
+    review.timestamps.forEach(function (t, idx) {
+      var cb = dateTableWrap.querySelector('input[data-i="' + idx + '"]');
+      var di = dateTableWrap.querySelector('input[data-d="' + idx + '"]');
+      var insert = cb && cb.checked;
+      var header = insert
+        ? window.SlackMerger.formatDateHeader(di && di.value)
+        : null;
+      if (insert && !header) missing++;
+      decisions.push({ insert: !!insert && !!header, header: header });
+    });
+
+    if (missing) {
+      dateError.textContent =
+        '⚠ ' + missing + ' ticked timestamp' + (missing === 1 ? '' : 's') +
+        ' need a valid date before you can apply.';
+      dateError.classList.remove('hidden');
+      return;
+    }
+
+    var res = window.SlackMerger.insertDates(review.text, decisions);
+    dateCard.classList.add('hidden');
+    state.review = null;
+    review.onApply(res.output, res.inserted);
+  });
+
+  cancelDatesBtn.addEventListener('click', function () {
+    dateCard.classList.add('hidden');
+    state.review = null;
   });
 
   downloadBtn.addEventListener('click', function () {
@@ -84,7 +245,7 @@
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = 'merged-channel.md';
+    a.download = state.downloadName || 'output.md';
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -109,7 +270,15 @@
     }
   );
 
-  function renderReport(r) {
+  function renderReport(r, datesNote) {
+    var note = datesNote
+      ? '<p class="ok">📅 ' + datesNote + '</p>'
+      : '';
+    if (!r) {
+      reportEl.innerHTML =
+        note || '<p>Done. No reply threads were merged in this mode.</p>';
+      return;
+    }
     var ok = r.matched.length === r.insertionPoints && r.missing.length === 0;
     var bySeq = r.matched.filter(function (m) {
       return m.source === 'sequence';
@@ -152,7 +321,7 @@
         '<p class="bad">⚠ Some matches need a human check — ' +
         'review the preview carefully.</p>';
     }
-    reportEl.innerHTML = html;
+    reportEl.innerHTML = html + note;
   }
 
   function row(k, v) {

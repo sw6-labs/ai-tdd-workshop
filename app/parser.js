@@ -191,7 +191,105 @@
     return { output: merged, report: report };
   }
 
-  var api = { merge: merge, indexReplyThreads: indexReplyThreads };
+  // --- Date insertion (Exercise 1 + 2) -------------------------------------
+
+  // A line that consists ONLY of a single H:MM AM/PM timestamp (leading /
+  // trailing whitespace allowed). Bare times like "11:56" are intentionally
+  // NOT matched, and "> 2:03 PM" inside a blockquoted reply thread is not
+  // matched either (it has a leading ">").
+  // \s is used (not [ \t]) because Slack indents these lines with
+  // non-breaking spaces (U+00A0); lines are already split, so \s never
+  // spans a newline here.
+  var RE_TIMESTAMP = /^\s*\d{1,2}:\d{2}\s*(?:AM|PM)\s*$/i;
+  // A fully bold line, e.g. "**Clare Sudbery (she/her)**" — a Slack username.
+  var RE_BOLD_LINE = /^\s*\*\*.+\*\*\s*$/;
+
+  var DAYS = [
+    'Sunday', 'Monday', 'Tuesday', 'Wednesday',
+    'Thursday', 'Friday', 'Saturday'
+  ];
+  var MONTHS = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  /**
+   * Find every standalone timestamp line in the text.
+   * @returns {Array<{lineIndex:number, time:string, prevLine:string,
+   *   prevPreview:string, hasUserName:boolean, isFirst:boolean}>}
+   */
+  function findTimestamps(text) {
+    var lines = String(text).replace(/\r\n/g, '\n').split('\n');
+    var found = [];
+    for (var i = 0; i < lines.length; i++) {
+      if (!RE_TIMESTAMP.test(lines[i])) continue;
+      var prev = i > 0 ? lines[i - 1] : '';
+      found.push({
+        lineIndex: i,
+        time: lines[i].trim(),
+        prevLine: prev,
+        prevPreview: prev.slice(0, 40),
+        hasUserName: RE_BOLD_LINE.test(prev),
+        isFirst: found.length === 0
+      });
+    }
+    return found;
+  }
+
+  /**
+   * Format an ISO "YYYY-MM-DD" string as e.g. "Monday, 26 August 2025".
+   * Parsed in UTC to avoid timezone off-by-one. Returns null if invalid.
+   */
+  function formatDateHeader(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || '').trim());
+    if (!m) return null;
+    var y = parseInt(m[1], 10);
+    var mo = parseInt(m[2], 10);
+    var d = parseInt(m[3], 10);
+    if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+    var dt = new Date(Date.UTC(y, mo - 1, d));
+    return DAYS[dt.getUTCDay()] + ', ' + d + ' ' + MONTHS[mo - 1] + ' ' + y;
+  }
+
+  /**
+   * Insert "## <date>" headers above selected timestamps.
+   *
+   * `decisions` is aligned by index with findTimestamps(text): each entry is
+   * { insert:boolean, header:string }. When a timestamp is preceded by a bold
+   * username line, the header goes ABOVE the username (Exercise 2); otherwise
+   * directly above the timestamp (Exercise 1e). The header is always wrapped
+   * in blank lines.
+   *
+   * @returns {{output:string, inserted:number}}
+   */
+  function insertDates(text, decisions) {
+    var lines = String(text).replace(/\r\n/g, '\n').split('\n');
+    var stamps = findTimestamps(text);
+    var inserted = 0;
+    decisions = decisions || [];
+    // Bottom-up so earlier line indices stay valid as we splice.
+    for (var k = stamps.length - 1; k >= 0; k--) {
+      var dec = decisions[k];
+      if (!dec || !dec.insert || !dec.header) continue;
+      var s = stamps[k];
+      var at = s.hasUserName ? s.lineIndex - 1 : s.lineIndex;
+      lines.splice(at, 0, '', '## ' + dec.header, '');
+      inserted++;
+    }
+    var outText = lines
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .replace(/^\n+/, '');
+    return { output: outText, inserted: inserted };
+  }
+
+  var api = {
+    merge: merge,
+    indexReplyThreads: indexReplyThreads,
+    findTimestamps: findTimestamps,
+    formatDateHeader: formatDateHeader,
+    insertDates: insertDates
+  };
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = api;
   } else {
