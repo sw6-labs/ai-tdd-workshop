@@ -87,10 +87,18 @@ Regex (anchored, whole trimmed line):
 - The pointer line is **removed** from the output.
 - The number is matched to the reply file whose name matches
   `ReplyThread0*(\d+)\.md` (case-insensitive; leading zeros ignored).
-- **Fallback:** if there is no pointer number, or no file matches the
-  number, use the *Nth* reply file (ordered by parsed number, else by
-  filename) for the *Nth* insertion point. Every fallback / unnumbered
-  insertion point must be flagged in the report for human review.
+- **Numbered but missing:** if a pointer number is present but no reply
+  file matches it, this is **not** a sequence fallback — it is a *missing*
+  thread: insert the placeholder (§4.4) and record the number in `missing`.
+- **Sequence fallback (unnumbered points only):** insertion points with
+  **no** `Thread NN >>>` pointer are resolved by sequence. Build the
+  fallback pool from reply files **not already matched by number**, ordered
+  by parsed number (else by filename). Assign these pool files, in order, to
+  the unnumbered insertion points in document order (1st unnumbered point →
+  1st remaining pool file, etc.). A file is never used twice. If the pool is
+  exhausted, the unnumbered point gets the no-file placeholder (§4.4).
+- Every sequence-fallback / unnumbered insertion point must be flagged in
+  the report for human review.
 
 ### 4.3 Scaffolding removal
 After the reply-count line, consume and discard consecutive "scaffolding
@@ -143,7 +151,10 @@ A timestamp line is a line consisting **only** of `H:MM AM/PM`
 (case-insensitive), leading/trailing whitespace allowed. Bare 24-hour times
 like `11:56` are **not** matched. A `> 2:03 PM` line inside a quoted reply
 thread is **not** matched (leading `>`).
-Regex: `^\s*\d{1,2}:\d{2}\s*(?:AM|PM)\s*$` (case-insensitive).
+Regex: `^\s*\d{1,2}:\d{2}\s*(?:AM|PM)\s*$` (case-insensitive). The shape
+regex is **not sufficient on its own**: the hour must be **0–12** and the
+minute **00–59**, so `25:00 AM` is rejected while `00:15 am` is accepted
+(see §8).
 
 > **Gotcha (must be covered by a test):** Slack indents timestamp and
 > username lines with **non-breaking spaces (U+00A0)**, so whitespace
@@ -163,6 +174,12 @@ Present **all** timestamps in one table with columns: *New date?*
 (checkbox), *Context* (the 40-char preview of the previous line, or
 "(start of file)"), *Time*, *Date* (an HTML `date` picker).
 - The first timestamp's checkbox is **pre-ticked** (always a new date).
+- **Default date value:** each ticked row's Date picker defaults to the
+  most recent **valid date entered in a ticked row above it**; the first
+  ticked row (and any ticked row with no dated ticked row above it) starts
+  blank. This default is recomputed as the user edits dates/ticks. The
+  date-selection callback is invoked with these defaults so the defaulting
+  behaviour is observable and testable.
 - On apply: every ticked row needs a valid date; if any ticked row lacks a
   valid date, show an error (`⚠ N ticked timestamp(s) need a valid date…`)
   and do not proceed.
@@ -199,8 +216,11 @@ A required single-choice mode selector:
 The Run button is enabled only when a channel is available **and** reply
 files are present *if the mode needs them*. Step status indicators reflect
 readiness; the reply step is visibly dimmed/"not needed" in dates-only mode.
-Output filenames differ by mode (e.g. `merged-channel.md`,
-`channel-with-dates.md`, `merged-channel-with-dates.md`).
+Output filenames by mode:
+- Mode 1 (replies → dates): `merged-channel-with-dates.md`
+- Mode 2 (dates → replies): `merged-channel-with-dates.md`
+- Mode 3 (replies only): `merged-channel.md`
+- Mode 4 (dates only): `channel-with-dates.md`
 
 ## 7. Output & preview
 
